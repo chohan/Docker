@@ -1,0 +1,28 @@
+FROM centos:latest
+MAINTAINER Salah Chohan
+LABEL version="1.0" location="Canada" type="centos_dev"
+
+RUN yum update -y
+RUN yum install -y openssh* vim vundle initscripts tree tmux
+RUN yum install -y gcc* make openssl-devel python git
+#RUN yum groupinstall -y "Development Tools"
+RUN yum install -y arp-scan ipcalc htop nmap ncat netcat net-tools curl dhclient iftop iptables iputils netsniff-ng ngrep ping route socat tcpdump telnet traceroute websocat wget Wireshark
+
+RUN echo 'root:toor' | chpasswd
+RUN echo "service sshd restart" >> /start.sh
+RUN echo "/bin/bash" >> /start.sh
+RUN chmod +x /start.sh
+
+# ensure bashrc is present
+COPY bashrc /root/.bashrc
+
+EXPOSE 22
+WORKDIR /root
+USER root
+ENTRYPOINT /start.sh
+
+#/bin/systemctl restart ssh.service
+# docker build -f centos_dev.df -t centos_dev .
+# docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name centos_dev centos_dev
+# ssh root@192.168.99.100 -p 2222
+

@@ -1,0 +1,44 @@
+FROM ubuntu:latest
+MAINTAINER Salah Chohan
+LABEL version="1.0" location="Toronto" type="ubuntu_dev"
+
+# ensure bashrc is present
+COPY bashrc /root/.bashrc
+COPY vimrc /root/.vimrc
+
+RUN apt update -y
+RUN apt install -y apt-utils openssh* vim tree tmux
+RUN apt install -y build-essential git 
+
+# install python
+RUN apt install -y python python-pip python3-pip
+RUN python -m pip install --user numpy pandas
+RUN python3 -m pip install --user numpy pandas
+
+# install net tools
+RUN apt install -y arp-scan ipcalc htop nmap netcat net-tools curl iftop iptables ngrep socat tcpdump telnet traceroute wget
+# unable to locate ncat dhclient iputilsy ping route websocat wireshark
+
+# install Golang
+RUN mkdir -p /goroot && curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
+ENV GOROOT /goroot
+ENV PATH $GOROOT/bin:$PATH
+
+# SSH server setup
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN echo 'root:toor' | chpasswd
+RUN echo "service ssh restart" >> /start.sh
+RUN echo "/bin/bash" >> /start.sh
+RUN chmod +x /start.sh
+EXPOSE 22
+WORKDIR /root
+USER root
+ENTRYPOINT /start.sh
+
+
+## commands to build and run
+#/bin/systemctl restart ssh.service
+# docker build -f ubuntu_dev.df -t ubuntu_dev .
+# docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name ubuntu_dev ubuntu_dev
+# ssh root@192.168.99.100 -p 2222
+

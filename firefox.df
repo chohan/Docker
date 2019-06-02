@@ -1,0 +1,26 @@
+FROM ubuntu:latest
+MAINTAINER Salah ChohanLABEL version="1.0" location="Toronto" type="firefox"
+
+# ensure bashrc is present
+COPY bashrc /root/.bashrc
+
+RUN apt-get update && apt-get install -y firefox
+CMD /usr/bin/firefox
+
+
+# SSH server setup
+#RUN apt install -y apt-utils openssh* vim tree tmux
+#RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+#RUN echo 'root:toor' | chpasswd
+#RUN echo "service ssh restart" >> /start.sh
+#RUN echo "/bin/bash" >> /start.sh
+#RUN chmod +x /start.sh
+#EXPOSE 22
+#WORKDIR /root
+#USER root
+#ENTRYPOINT /start.sh
+
+
+## commands to build and run
+# docker build -f firefox.df -t firefox .
+# docker run -ti --rm -e DISPLAY=192.168.0.120:0.0 firefox
