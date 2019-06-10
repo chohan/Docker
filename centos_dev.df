@@ -14,7 +14,7 @@ RUN echo "/bin/bash" >> /start.sh
 RUN chmod +x /start.sh
 
 # ensure bashrc is present
-COPY bashrc /root/.bashrc
+COPY .bashrc /root/.bashrc
 
 EXPOSE 22
 WORKDIR /root
@@ -24,5 +24,6 @@ ENTRYPOINT /start.sh
 #/bin/systemctl restart ssh.service
 # docker build -f centos_dev.df -t centos_dev .
 # docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name centos_dev centos_dev
+# docker run --rm -it -v /D:/d -v /C:/c -p 2222:22 --name centos_dev centos_dev
 # ssh root@192.168.99.100 -p 2222
 
