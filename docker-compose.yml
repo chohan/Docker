@@ -1,0 +1,12 @@
+# docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --name ubuntu_dev shchohan/ubuntu_dev
+
+version: "3.7"
+services:
+  ubuntu_dev:
+    image: shchohan/ubuntu_dev
+    ports:
+      - "2222:22"
+    volumes:
+      - "/C:/c"
+      - /D:/d
+    tty: true

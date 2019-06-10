@@ -1,0 +1,1 @@
+docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --name ubuntu_dev shchohan/ubuntu_dev
