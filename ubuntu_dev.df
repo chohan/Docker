@@ -40,5 +40,6 @@ ENTRYPOINT /start.sh
 #/bin/systemctl restart ssh.service
 # docker build -f ubuntu_dev.df -t ubuntu_dev .
 # docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name ubuntu_dev ubuntu_dev
+# docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --name ubuntu_dev shchohan/ubuntu_dev
 # ssh root@192.168.99.100 -p 2222
 

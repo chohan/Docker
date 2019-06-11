@@ -1,0 +1,30 @@
+FROM scratch
+MAINTAINER Salah Chohan
+LABEL version="1.0" location="Toronto" type="centos7"
+
+# ensure bashrc is present
+COPY bashrc /root/.bashrc
+COPY vimrc /root/.vimrc
+
+ADD centos-7-x86_64-docker.tar.xz /
+
+LABEL org.label-schema.schema-version="1.0" \
+    org.label-schema.name="CentOS Base Image" \
+    org.label-schema.vendor="CentOS" \
+    org.label-schema.license="GPLv2" \
+    org.label-schema.build-date="20190305"
+
+# SSH server setup
+RUN yum apt install -y apt-utils openssh* vim tree
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN echo 'root:toor' | chpasswd
+RUN echo "service ssh restart" >> /start.sh
+RUN echo "/bin/bash" >> /start.sh
+RUN chmod +x /start.sh
+EXPOSE 22
+WORKDIR /root
+USER root
+ENTRYPOINT /start.sh
+
+CMD ["/bin/bash"]
+
