@@ -6,7 +6,27 @@ LABEL version="1.0" location="Toronto" type="centos7"
 COPY bashrc /root/.bashrc
 COPY vimrc /root/.vimrc
 
-ADD centos-7-x86_64-docker.tar.xz /
+RUN cd /tmp
+ADD US_Package/8.0-Linux-Dependencies/dependencies-centos7.6-8.0.tar.gz .
+ADD US_Package/8.0_stable/2019-06-07-1/DEV/MongoRpm/mongodb-linux-x86_64-rhel7-4.0.6-8.0.tar.gz .
+ADD US_Package/8.0_stable/2019-06-07-1/DEV/REDIS/redis-linux-x86_64-rhel7-5.0.4-8.0.tar.gz .
+ADD US_Package/8.0_stable/2019-06-07-1/DEV/RABBITMQ/rabbitmq-linux-x86_64-rhel7-3.7.14-8.0.tar.gz .
+ADD US_Package/8.0_stable/2019-06-07-1/DEV/Elasticsearch/elasticsearch-linux-x86_64-rhel7-6.7.2-8.0.tar.gz .
+
+RUN tar -xvf dependencies-centos7.6-8.0.tar.gz
+RUN tar -xvf mongodb-linux-x86_64-rhel7-4.0.6-8.0.tar.gz
+RUN tar -xvf redis-linux-x86_64-rhel7-5.0.4-8.0.tar.gz
+RUN tar -xvf rabbitmq-linux-x86_64-rhel7-3.7.14-8.0.tar.gz
+RUN tar -xvf elasticsearch-linux-x86_64-rhel7-6.7.2-8.0.tar.gz
+
+RUN cd dependencies/;./offline-install.sh
+RUN cd MongoDB/;./install.sh
+RUN cd redis;./install.sh
+RUN cd rabbitmq;./install.sh
+RUN cd Elasticsearch;./install.sh
+
+
+ADD 
 
 LABEL org.label-schema.schema-version="1.0" \
     org.label-schema.name="CentOS Base Image" \
