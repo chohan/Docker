@@ -1,41 +1,54 @@
-FROM scratch
+FROM centos/systemd
+#FROM centos:7
+#scratch
 MAINTAINER Salah Chohan
 LABEL version="1.0" location="Toronto" type="centos7"
 
 # ensure bashrc is present
-COPY bashrc /root/.bashrc
-COPY vimrc /root/.vimrc
+COPY .bashrc /root/.bashrc
+COPY .vimrc /root/.vimrc
 
-RUN cd /tmp
-ADD US_Package/8.0-Linux-Dependencies/dependencies-centos7.6-8.0.tar.gz .
-ADD US_Package/8.0_stable/2019-06-07-1/DEV/MongoRpm/mongodb-linux-x86_64-rhel7-4.0.6-8.0.tar.gz .
-ADD US_Package/8.0_stable/2019-06-07-1/DEV/REDIS/redis-linux-x86_64-rhel7-5.0.4-8.0.tar.gz .
-ADD US_Package/8.0_stable/2019-06-07-1/DEV/RABBITMQ/rabbitmq-linux-x86_64-rhel7-3.7.14-8.0.tar.gz .
-ADD US_Package/8.0_stable/2019-06-07-1/DEV/Elasticsearch/elasticsearch-linux-x86_64-rhel7-6.7.2-8.0.tar.gz .
+# OS dependenices
+RUN yum -y update
+RUN yum -y install policycoreutils policycoreutils-python selinux-policy selinux-policy-targeted libselinux-utils setroubleshoot-server setools setools-console mcstrans
+RUN yum install iproute -y			# for ss
+RUN yum install -y e2fsprogs		# for lsattr: command not found
+RUN yum install -y initscripts	# for /sbin/service
 
-RUN tar -xvf dependencies-centos7.6-8.0.tar.gz
-RUN tar -xvf mongodb-linux-x86_64-rhel7-4.0.6-8.0.tar.gz
-RUN tar -xvf redis-linux-x86_64-rhel7-5.0.4-8.0.tar.gz
-RUN tar -xvf rabbitmq-linux-x86_64-rhel7-3.7.14-8.0.tar.gz
-RUN tar -xvf elasticsearch-linux-x86_64-rhel7-6.7.2-8.0.tar.gz
+# dependencies
+ADD ./DBs/dependencies-centos7.6-8.0.tar.gz /tmp
+WORKDIR /tmp/dependencies
+RUN ./offline-install.sh
 
-RUN cd dependencies/;./offline-install.sh
-RUN cd MongoDB/;./install.sh
-RUN cd redis;./install.sh
-RUN cd rabbitmq;./install.sh
-RUN cd Elasticsearch;./install.sh
+# mongoDB
+ADD ./DBs/mongodb-linux-x86_64-rhel7-4.0.6-8.0.tar.gz /tmp
+WORKDIR /tmp/MongoDB
+RUN ./install.sh
+
+# Redis
+ADD ./DBs/redis-linux-x86_64-rhel7-5.0.4-8.0.tar.gz /tmp
+WORKDIR /tmp/redis
+RUN ./install.sh
+
+# RabbitMQ
+ADD ./DBs/rabbitmq-linux-x86_64-rhel7-3.7.14-8.0.tar.gz /tmp
+WORKDIR /tmp/rabbitmq
+RUN ./install.sh
+
+# ElasticSearch
+ADD ./DBs/elasticsearch-linux-x86_64-rhel7-6.7.2-8.0.tar.gz /tmp
+WORKDIR /tmp/Elasticsearch
+RUN ./install.sh
 
 
-ADD 
-
-LABEL org.label-schema.schema-version="1.0" \
-    org.label-schema.name="CentOS Base Image" \
-    org.label-schema.vendor="CentOS" \
-    org.label-schema.license="GPLv2" \
-    org.label-schema.build-date="20190305"
+#LABEL org.label-schema.schema-version="1.0" \
+#    org.label-schema.name="CentOS Base Image" \
+#    org.label-schema.vendor="CentOS" \
+#    org.label-schema.license="GPLv2" \
+#    org.label-schema.build-date="20190305"
 
 # SSH server setup
-RUN yum apt install -y apt-utils openssh* vim tree
+RUN yum install -y apt-utils openssh* vim tree
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN echo 'root:toor' | chpasswd
 RUN echo "service ssh restart" >> /start.sh
@@ -46,5 +59,10 @@ WORKDIR /root
 USER root
 ENTRYPOINT /start.sh
 
-CMD ["/bin/bash"]
 
+## commands to build and run
+#/bin/systemctl restart ssh.service
+# docker build -f centos7.df -t centos7 .
+# docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name centos7 centos7
+# docker run --rm -it -v /C:/c -v /D:/d -p 2244:22 --name centos7 centos7
+# ssh root@10.99.98.43 -p 2244
