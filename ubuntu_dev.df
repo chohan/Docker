@@ -9,7 +9,7 @@ COPY .vimrc /root/.vimrc
 RUN apt update -y
 RUN apt install -y apt-utils openssh* vim tree tmux
 RUN apt install -y build-essential git
-RUN apt install build-essential g++ python-dev autotools-dev libicu-dev libbz2-dev libboost-all-dev gdb
+RUN apt install -y build-essential g++ python-dev autotools-dev libicu-dev libbz2-dev libboost-all-dev gdb
 
 # install python
 RUN apt install -y python python-pip python3-pip
