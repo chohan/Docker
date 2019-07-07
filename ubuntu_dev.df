@@ -8,10 +8,18 @@ COPY .vimrc /root/.vimrc
 
 RUN apt update -y
 RUN apt install -y apt-utils openssh* vim tree tmux
-RUN apt install -y build-essential git
-RUN apt install -y build-essential g++ python-dev autotools-dev libicu-dev libbz2-dev libboost-all-dev gdb
+RUN apt install -y build-essential
+RUN apt install -y autotools-dev
+RUN apt install -y g++ 
+RUN apt install -y gdb
+RUN apt install -y git
+RUN apt install -y libboost-all-dev
+RUN apt install -y libicu-dev
+#RUN apt install -y libbz2-dev
+      
 
 # install python
+#RUN apt install -y python-dev
 RUN apt install -y python python-pip python3-pip
 RUN python -m pip install --user numpy pandas
 RUN python3 -m pip install --user numpy pandas
