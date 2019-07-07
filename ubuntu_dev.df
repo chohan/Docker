@@ -3,12 +3,13 @@ MAINTAINER Salah Chohan
 LABEL version="1.0" location="Toronto" type="ubuntu_dev"
 
 # ensure bashrc is present
-COPY bashrc /root/.bashrc
-COPY vimrc /root/.vimrc
+COPY .bashrc /root/.bashrc
+COPY .vimrc /root/.vimrc
 
 RUN apt update -y
 RUN apt install -y apt-utils openssh* vim tree tmux
-RUN apt install -y build-essential git 
+RUN apt install -y build-essential git
+RUN apt install build-essential g++ python-dev autotools-dev libicu-dev libbz2-dev libboost-all-dev gdb
 
 # install python
 RUN apt install -y python python-pip python3-pip
@@ -41,5 +42,6 @@ ENTRYPOINT /start.sh
 # docker build -f ubuntu_dev.df -t ubuntu_dev .
 # docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name ubuntu_dev ubuntu_dev
 # docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --name ubuntu_dev shchohan/ubuntu_dev
+# docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --name ubuntu_dev shchohan/ubuntu_dev:latest
 # ssh root@192.168.99.100 -p 2222
 
