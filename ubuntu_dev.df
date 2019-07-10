@@ -33,6 +33,9 @@ RUN mkdir -p /goroot && curl https://storage.googleapis.com/golang/go1.4.2.linux
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$PATH
 
+# clean up
+RUN apt clean && rm -rf /var/lib/apt/lists/*
+
 # SSH server setup
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN echo 'root:toor' | chpasswd
@@ -50,6 +53,6 @@ ENTRYPOINT /start.sh
 # docker build -f ubuntu_dev.df -t ubuntu_dev .
 # docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name ubuntu_dev ubuntu_dev
 # docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --name ubuntu_dev shchohan/ubuntu_dev
-# docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --name ubuntu_dev shchohan/ubuntu_dev:latest
+# docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --name ubuntu_dev shchohan/ubuntu_dev:latest
 # ssh root@192.168.99.100 -p 2222
 
