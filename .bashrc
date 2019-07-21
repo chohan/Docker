@@ -33,8 +33,6 @@ alias ipgrep='grep -o "[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}"'
 #alias cd2d='cd /cygdrive/d'
 #alias cd2e='cd /cygdrive/e'
 #alias cd2f='cd /cygdrive/f'
-#if [[ $(uname -s) == "CYGWIN"* ]]; then alias sudo="cygstart --action=runas"; fi
-#alias sudo="cygstart --action=runas"
 alias l='ls -lah --color=auto'
 alias ipgrep='grep -o "[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}"'
 alias cd2p='cd /d/Projects'
@@ -63,5 +61,5 @@ export PS1="\[\t\e[1;32m\]\[\e]0;\w\a\]\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[0m\]\n\$
 #	find . -name "$1" -exec grep $2 {} \; -print
 #}
 
-function fff {  find . -type f|egrep ".($2)$" | xargs egrep $1; }
+function fff {  find . -type f | egrep "\.($2)$" | xargs egrep $1; }
 heta() { head -n $2 | tail -n $(($2-$1+1)); } 
