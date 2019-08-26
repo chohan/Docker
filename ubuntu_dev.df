@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 MAINTAINER Salah Chohan
-LABEL version="1.0" location="Toronto" type="ubuntu_dev"
+LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
 
 # ensure bashrc is present
 COPY .bashrc /root/.bashrc
@@ -13,11 +13,17 @@ RUN apt install -y autotools-dev
 RUN apt install -y g++ 
 RUN apt install -y gdb
 RUN apt install -y git
-RUN apt install -y libboost-all-dev
+#RUN apt install -y libboost-all-dev
 RUN apt install -y libicu-dev
 RUN apt install -y libusb-dev
 #RUN apt install -y libbz2-dev
 RUN apt install -y libzmq3-dev      
+
+# install boost
+RUN wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz
+RUN tar -zxvf boost_1_70_0.tar.gz
+RUN cd boost_1_70_0 && ./bootstrap.sh && ./b2 && cd -
+RUN rm -f boost_1_70_0.tar.gz
 
 # install python
 #RUN apt install -y python-dev
