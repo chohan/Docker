@@ -1,0 +1,61 @@
+FROM ubuntu:latest
+MAINTAINER Salah Chohan
+LABEL version="1.0" Location="Toronto" type="ACCS"
+
+# ensure bashrc is present
+COPY .bashrc /root/.bashrc
+COPY .vimrc /root/.vimrc
+
+# prequisites
+RUN apt update -y && \
+	apt install -y apt-utils openssh* vim && \
+	apt install -y libusb-1.0-0-dev pkg-config ca-certificates git-core cmake build-essential --no-install-recommends
+RUN apt install -y python3-pip && \
+		python3 -m pip install --user websockets
+
+# rtl-sdr
+WORKDIR /tmp
+#RUN echo 'blacklist dvb_usb_rtl28xxu' > /etc/modprobe.d/raspi-blacklist.conf && \
+RUN git clone git://git.osmocom.org/rtl-sdr.git && \
+    mkdir rtl-sdr/build && \
+    cd rtl-sdr/build && \
+    cmake ../ -DINSTALL_UDEV_RULES=ON -DDETACH_KERNEL_DRIVER=ON && \
+    make && \
+    make install && \
+    ldconfig && \
+    rm -rf /tmp/rtl-sdr
+
+# dump1090
+#WORKDIR /
+#RUN git clone git://github.com/antirez/dump1090.git && \
+#	cd dump1090 && \
+#	make
+#WORKDIR /dump1090
+#ENTRYPOINT ["./dump1090"]
+# docker run -it --device=/dev/bus/usb -p 8080:8080 dump1090 --interactive --net
+RUN apt install -y libzmq3-dev
+RUN mkdir /sensor
+COPY sensor /sensor/.
+
+# clean up
+RUN apt clean && rm -rf /var/lib/apt/lists/*
+
+# SSH server setup
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN echo 'root:toor' | chpasswd
+RUN echo "service ssh restart" >> /start.sh
+RUN echo "/sensor/sensor --interactive --net --net-http-port 9797" >> /start.sh
+#RUN echo "/bin/bash" >> /start.sh
+RUN chmod +x /start.sh
+EXPOSE 22 9797 80
+WORKDIR /root
+USER root
+ENTRYPOINT /start.sh
+
+
+## commands to build and run
+# docker build -f accs.df -t accs .
+# docker run -it -v /D_DRIVE:/d -p 2201:22 -p 9797:9797 -p 9898:80 --device=/dev/bus/usb accs
+# ssh root@192.168.99.100 -p 2201
+# /bin/systemctl restart ssh.service
+
