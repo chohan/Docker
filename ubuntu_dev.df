@@ -6,58 +6,62 @@ LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
 COPY .bashrc /root/.bashrc
 COPY .vimrc /root/.vimrc
 
-RUN apt update -y \
-	&& apt install -y \
-	apt-utils openssh* vim tree tmux wget \
+RUN apt update -y && \
+	apt install -y \
+	apt-utils openssh* vim tree tmux \
 	build-essential cmake pkg-config ca-certificates \
 	autotools-dev \
-	g++ \
-	gdb \
-	git \
+	g++ gdb git \
 	libicu-dev libusb-dev libzmq3-dev \
 # apt install -y libboost-all-dev
 # apt install -y libbz2-dev
 
-# install boost
-	&& \
-	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz \
-	&& tar -zxvf boost_1_70_0.tar.gz \
-	&& cd boost_1_70_0 && ./bootstrap.sh && ./b2 && cd - \
-	&& rm -f boost_1_70_0.tar.gz \
-
 # install python
-# apt install -y python-dev
 	&& \
 	apt install -y \
-#	python python-pip 
-	python3 python3-pip \
-#	&& python  -m pip install --user numpy pandas \
-	&& python3 -m pip install --user numpy pandas \
-	&& python3 -m pip install --user websockets \
+	python3 python3-pip && \
+	python3 -m pip install --user numpy pandas && \
+	python3 -m pip install --user websockets \
 
 # install net tools
 	&& \
 	apt install -y \
-	arp-scan ipcalc htop nmap netcat net-tools curl iftop iptables ngrep socat tcpdump telnet traceroute \
+	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute \
 # unable to locate ncat dhclient iputilsy ping route websocat wireshark
 
+# install boost
+	&& \
+	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz && \
+	tar -zxvf boost_1_70_0.tar.gz && \
+	cd boost_1_70_0 && ./bootstrap.sh && ./b2 && cd - && \
+	rm -f boost_1_70_0.tar.gz \
+
+# install nodejs
+	&& \
+	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
+	apt install -y nodejs \
 
 # install Golang
 	&& \
-	mkdir -p /goroot && curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
+	mkdir -p /goroot && \
+	curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$PATH
+
+# Docker files
+COPY ubuntu_dev.df		/.
+COPY ubuntu_dev.bat		/.
 
 # clean up
 RUN apt clean && rm -rf /var/lib/apt/lists/* \
 
 # SSH server setup
 	&& \
-	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-	&& echo 'root:toor' | chpasswd \
-	&& echo "service ssh restart" >> /start.sh \
-	&& echo "/bin/bash" >> /start.sh \
-	&& chmod +x /start.sh
+	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+	echo 'root:toor' | chpasswd && \
+	echo "service ssh restart" >> /start.sh && \
+	echo "/bin/bash" >> /start.sh && \
+	chmod +x /start.sh
 EXPOSE 22
 WORKDIR /root
 USER root
@@ -67,8 +71,6 @@ ENTRYPOINT /start.sh
 ## commands to build and run
 #/bin/systemctl restart ssh.service
 # docker build -f ubuntu_dev.df -t ubuntu_dev .
-# docker run --rm -it -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --name ubuntu_dev ubuntu_dev
-# docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --name ubuntu_dev shchohan/ubuntu_dev
-# docker run --rm -it -v /C:/c -v /D:/d -p 2222:22 --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --name ubuntu_dev shchohan/ubuntu_dev:latest
-# ssh root@192.168.99.100 -p 2222
+# docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001 -p 9001:9001 --expose 9002 -p 9002:9002 --expose 9003 -p 9003:9003 --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev:20190826
+# ssh root@192.168.99.102 -p 2222
 
