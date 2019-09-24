@@ -12,38 +12,53 @@ RUN apt update -y && \
 	build-essential cmake pkg-config ca-certificates \
 	autotools-dev \
 	g++ gdb git \
-	libicu-dev libusb-dev libzmq3-dev \
+	libicu-dev libusb-dev libzmq3-dev
 # apt install -y libboost-all-dev
 # apt install -y libbz2-dev
 
 # install python
-	&& \
-	apt install -y \
+RUN	apt install -y \
 	python3 python3-pip && \
 	python3 -m pip install --user numpy pandas && \
-	python3 -m pip install --user websockets \
+	python3 -m pip install --user websockets
 
 # install net tools
-	&& \
-	apt install -y \
-	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute \
+RUN	apt install -y \
+	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute
 # unable to locate ncat dhclient iputilsy ping route websocat wireshark
 
-# install boost
-	&& \
-	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz && \
+# install boost	#apt install -y libboost-all-dev
+RUN	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz && \
 	tar -zxvf boost_1_70_0.tar.gz && \
 	cd boost_1_70_0 && ./bootstrap.sh && ./b2 && cd - && \
-	rm -f boost_1_70_0.tar.gz \
+	rm -f boost_1_70_0.tar.gz
 
-# install nodejs
-	&& \
-	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
-	apt install -y nodejs \
+# install openssl
+RUN	cd /tmp && \
+	git clone https://github.com/openssl/openssl.git && \
+	cd openssl && \
+	./config && \
+	make && make install && \
+	ldconfig
+	
+# instal rtl-sdr
+RUN	apt install -y libusb-1.0-0-dev && \
+	cd /tmp && \
+	git clone git://git.osmocom.org/rtl-sdr.git && \
+	mkdir rtl-sdr/build && \
+	cd rtl-sdr/build && \
+	cmake ../ -DINSTALL_UDEV_RULES=ON -DDETACH_KERNEL_DRIVER=ON && \
+	make && \
+	make install && \
+	ldconfig
+
+# install nodejs and tsc
+RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
+	apt install -y nodejs && \
+	npm install -g typescript
 
 # install Golang
-	&& \
-	mkdir -p /goroot && \
+RUN	mkdir -p /goroot && \
 	curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$PATH
@@ -53,12 +68,13 @@ COPY ubuntu_dev.df		/.
 COPY ubuntu_dev.bat		/.
 
 # clean up
-RUN apt clean && rm -rf /var/lib/apt/lists/* \
+RUN apt update -y && apt upgrade -y && \
+	apt clean && rm -rf /var/lib/apt/lists/*
 
 # SSH server setup
-	&& \
-	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+RUN	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
 	echo 'root:toor' | chpasswd && \
+	echo "America/Toronto" > /etc/timezone && \
 	echo "service ssh restart" >> /start.sh && \
 	echo "/bin/bash" >> /start.sh && \
 	chmod +x /start.sh
