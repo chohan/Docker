@@ -2,13 +2,9 @@ FROM ubuntu:latest
 MAINTAINER Salah Chohan
 LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
 
-# ensure bashrc is present
-COPY .bashrc /root/.bashrc
-COPY .vimrc /root/.vimrc
-
 RUN apt update -y && \
 	apt install -y \
-	apt-utils openssh* vim tree tmux \
+	apt-utils openssh* sshpass vim tree tmux multitail \
 	build-essential cmake pkg-config ca-certificates \
 	autotools-dev \
 	g++ gdb git \
@@ -24,8 +20,8 @@ RUN	apt install -y \
 
 # install net tools
 RUN	apt install -y \
-	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute
-# unable to locate ncat dhclient iputilsy ping route websocat wireshark
+	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping
+# unable to locate ncat dhclient route websocat wireshark
 
 # install boost	#apt install -y libboost-all-dev
 RUN	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz && \
@@ -55,17 +51,20 @@ RUN	apt install -y libusb-1.0-0-dev && \
 # install nodejs and tsc
 RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
 	apt install -y nodejs && \
-	npm install -g typescript
+	npm install -g typescript && \
+	npm install -g --save-dev @types/jquery
 
 # install Golang
 RUN	mkdir -p /goroot && \
 	curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
-ENV GOROOT /goroot
-ENV PATH $GOROOT/bin:$PATH
 
-# Docker files
-COPY ubuntu_dev.df		/.
-COPY ubuntu_dev.bat		/.
+# config files
+COPY .bashrc /root/.
+COPY .vimrc /root/.
+COPY .tmux.conf /root/.
+COPY .gitconfig /root/.
+COPY ubuntu_dev.df	/root/.
+COPY ubuntu_dev.bat	/root/.
 
 # clean up
 RUN apt update -y && apt upgrade -y && \
@@ -76,11 +75,17 @@ RUN	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/
 	echo 'root:toor' | chpasswd && \
 	echo "America/Toronto" > /etc/timezone && \
 	echo "service ssh restart" >> /start.sh && \
+	echo "export GOROOT=/goroot" >> /start.sh && \
+	echo "export PATH=$GOROOT/bin:$PATH" >> /start.sh && \
 	echo "/bin/bash" >> /start.sh && \
 	chmod +x /start.sh
+COPY id_rsa.pub /root/.ssh/authorized_keys
+
 EXPOSE 22
 WORKDIR /root
 USER root
+#ENV GOROOT /goroot
+#ENV PATH $GOROOT/bin:$PATH
 ENTRYPOINT /start.sh
 
 
@@ -89,4 +94,6 @@ ENTRYPOINT /start.sh
 # docker build -f ubuntu_dev.df -t ubuntu_dev .
 # docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001 -p 9001:9001 --expose 9002 -p 9002:9002 --expose 9003 -p 9003:9003 --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev:20190826
 # ssh root@192.168.99.102 -p 2222
-
+# apt install ntp
+# docker ps -a
+# docker commit <df888c72ed5a> ubuntu_dev

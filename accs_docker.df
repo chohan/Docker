@@ -1,0 +1,71 @@
+FROM ubuntu:latest
+MAINTAINER Salah Chohan
+LABEL version="1.0" Location="Toronto" type="ACCS"
+
+RUN apt update -y && \
+	apt install -y \
+	apt-utils openssh* vim tmux \
+	build-essential cmake pkg-config ca-certificates \
+	libicu-dev libusb-dev libzmq3-dev
+
+# install python
+RUN	apt install -y \
+	python3 python3-pip && \
+	python3 -m pip install --user websockets
+
+# install net tools
+RUN	apt install -y \
+	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping
+# unable to locate ncat dhclient route websocat wireshark
+
+# install nodejs
+RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
+	apt install -y nodejs
+	
+# rtl-sdr
+#RUN echo 'blacklist dvb_usb_rtl28xxu' > /etc/modprobe.d/raspi-blacklist.conf
+RUN apt install -y git libusb-1.0-0-dev && \
+	cd /tmp && \
+	git clone git://git.osmocom.org/rtl-sdr.git && \
+    mkdir rtl-sdr/build && \
+    cd rtl-sdr/build && \
+    cmake ../ -DINSTALL_UDEV_RULES=ON -DDETACH_KERNEL_DRIVER=ON && \
+    make && \
+    make install && \
+    ldconfig && \
+    rm -rf /tmp/rtl-sdr && \
+	cd /
+
+# clean up
+RUN apt clean && rm -rf /var/lib/apt/lists/*
+
+# ensure bashrc is present
+COPY .bashrc /root/.
+COPY .vimrc /root/.
+COPY .tmux.conf /root/.
+COPY accs_docker.df	/root/.
+
+# SSH server setup
+RUN	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+	echo 'root:toor' | chpasswd && \
+	echo "#!/bin/bash" >> /start.sh && \
+	echo "service ssh restart" >> /start.sh && \
+	echo "/bin/bash" >> /start.sh && \
+	echo "cd /ACCS" >> /start.sh && \
+	chmod +x /start.sh
+COPY id_rsa.pub /root/.ssh/authorized_keys
+EXPOSE 22
+WORKDIR /root
+USER root
+ENTRYPOINT /start.sh
+
+
+## commands to build and run
+# docker build -f accs_docker.df -t accs .
+# apt install ntp
+# docker ps -a
+# docker commit <df888c72ed5a> ubuntu_dev
+# docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2201:22 --expose 4000 -p 4000:4000 --expose 9090 -p 9001:9090 --privileged -v /dev/bus/usb:/dev/bus/usb accs
+# docker-compose -f accs_prod.yml up -d
+# ssh root@192.168.99.105 -p 2251
+
