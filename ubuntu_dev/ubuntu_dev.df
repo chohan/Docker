@@ -1,33 +1,33 @@
-FROM ubuntu:latest
+FROM ubuntu:18.04
 MAINTAINER Salah Chohan
 LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
 
-RUN apt update -y && \
-	apt install -y \
+RUN apt-get update -y && \
+	apt-get install -y \
 	apt-utils openssh* sshpass vim tree tmux multitail \
 	build-essential cmake pkg-config ca-certificates \
 	autotools-dev \
 	g++ gdb git \
 	libicu-dev libusb-dev libzmq3-dev
-# apt install -y libboost-all-dev
-# apt install -y libbz2-dev
+# apt-get install -y libboost-all-dev
+# apt-get install -y libbz2-dev
+
+# install net tools
+RUN	apt-get install -y \
+	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping
+# unable to locate ncat dhclient route websocat wireshark
 
 # install python
-RUN	apt install -y \
+RUN	apt-get install -y \
 	python3 python3-pip && \
 	python3 -m pip install --user numpy pandas && \
 	python3 -m pip install --user websockets
 
-# install net tools
-RUN	apt install -y \
-	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping
-# unable to locate ncat dhclient route websocat wireshark
-
-# install boost	#apt install -y libboost-all-dev
+# install boost	#apt-get install -y libboost-all-dev
 RUN	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz && \
 	tar -zxvf boost_1_70_0.tar.gz && \
-	cd boost_1_70_0 && ./bootstrap.sh && ./b2 && cd - && \
-	rm -f boost_1_70_0.tar.gz
+	cd boost_1_70_0 && ./bootstrap.sh && ./b2 && cd - && rm -f boost_1_70_0.tar.gz
+#ADD http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz
 
 # install openssl
 RUN	cd /tmp && \
@@ -38,7 +38,7 @@ RUN	cd /tmp && \
 	ldconfig
 	
 # instal rtl-sdr
-RUN	apt install -y libusb-1.0-0-dev && \
+RUN	apt-get install -y libusb-1.0-0-dev && \
 	cd /tmp && \
 	git clone git://git.osmocom.org/rtl-sdr.git && \
 	mkdir rtl-sdr/build && \
@@ -50,7 +50,7 @@ RUN	apt install -y libusb-1.0-0-dev && \
 
 # install nodejs and tsc
 RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
-	apt install -y nodejs && \
+	apt-get install -y nodejs && \
 	npm install -g typescript && \
 	npm install -g --save-dev @types/jquery
 
@@ -58,22 +58,24 @@ RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
 RUN	mkdir -p /goroot && \
 	curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
 
+# redis-cli
+#RUN cp ../../../Tools/redis-cli /usr/local/bin/.
+
 # config files
-COPY .bashrc /root/.
-COPY .vimrc /root/.
-COPY .tmux.conf /root/.
-COPY .gitconfig /root/.
-COPY ubuntu_dev.df	/root/.
-COPY ubuntu_dev.bat	/root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.bashrc /root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.vimrc /root/.
+#ADD https://github.com/chohan/Linux-script/blob/master/.tmux.conf /root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.gitconfig /root/.
+COPY ubuntu_dev/ubuntu_dev.df	/root/.
+COPY ubuntu_dev/ubuntu_dev.bat	/root/.
 
 # clean up
-RUN apt update -y && apt upgrade -y && \
-	apt clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get upgrade -y && \
+	apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # SSH server setup
 RUN	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
 	echo 'root:toor' | chpasswd && \
-	echo "America/Toronto" > /etc/timezone && \
 	echo "service ssh restart" >> /start.sh && \
 	echo "export GOROOT=/goroot" >> /start.sh && \
 	echo "export PATH=$GOROOT/bin:$PATH" >> /start.sh && \
