@@ -25,17 +25,10 @@ services:
     tty: true
 
 ### Oracle https://github.com/fuzziebrain/docker-oracle-xe
-# docker run -d ^
-  # -p 11521:1521 ^
-  # -p 15500:5500 ^
-  # --name=oracle-xe ^
-  # --volume /D_DRIVE/Projects/ACCS/db/oradata-xe:/opt/oracle/oradata ^
-  # oracle-xe:18c
-  # 
   # docker exec -it oracle-xe bash -c "source /home/oracle/.bashrc; bash"
   # /opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE
   # docker exec -it oracle-xe bash -c "/opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE"
-  oracle2:
+  oracle:
     image: oracle-xe:18c
     container_name: oracle-xe
     volumes:
@@ -46,29 +39,11 @@ services:
       - 11521:1521
       - 15500:5500
       
-  
-### Oracle-db
-  # docker run -d -p 2252:22 -p 2521:1521 -p 8181:808 -e ORACLE_ALLOW_REMOTE=true -v /D_DRIVE/Projects/ACCS/db/oradata:/u01/app/oracle/oradata shchohan/oracle-xe-11g
-  # docker exec -ti <container name> sqlplus pdbadmin@ORCLPDB1
-  # sqlplus system/oracle@//192.168.99.105:2521
-  # oracle-db:
-    # image: shchohan/oracle-xe-11g
-    # ports:
-      # - 2252:22
-      # - 2521:1521
-      # - 8181:8080
-    # environment:
-      # - ORACLE_ALLOW_REMOTE=true
-    # volumes:
-      # - /D_DRIVE:/d
-      # - /D_DRIVE/Projects/ACCS/db/oradata:/u01/app/oracle/oradata
-      
 ### Redis    
   redis:
     image: redis
     ports:
       - "6379:6379"
-
 
     # deploy:
         # restart_policy:
@@ -81,5 +56,5 @@ services:
         # - 9.9.9.9
 #    entrypoint:
 #    healthcheck:
-#networks:
-#  - localhost
+networks:
+  - accs_net
