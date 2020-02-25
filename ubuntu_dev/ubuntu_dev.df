@@ -2,26 +2,17 @@ FROM ubuntu:18.04
 MAINTAINER Salah Chohan
 LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
 
+# Basic build software
 RUN apt-get update -y && \
 	apt-get install -y \
-	apt-utils openssh* sshpass vim tree tmux multitail \
-	build-essential cmake pkg-config ca-certificates \
-	autotools-dev \
-	g++ gdb git \
-	libicu-dev libusb-dev libzmq3-dev libaio1 rlwrap
-# apt-get install -y libboost-all-dev
-# apt-get install -y libbz2-dev
-
-# install net tools
-RUN	apt-get install -y \
-	wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping
-# unable to locate ncat dhclient route websocat wireshark
-
-# install python
-RUN	apt-get install -y \
-	python3 python3-pip && \
-	python3 -m pip install --user numpy pandas && \
-	python3 -m pip install --user websockets
+	git wget curl build-essential cmake pkg-config ca-certificates autotools-dev g++ gdb
+	
+# SSH server setup
+COPY id_rsa.pub /root/.ssh/authorized_keys
+RUN	apt-get install -y openssh* sshpass && \
+	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+	echo 'root:toor' | chpasswd && \
+	echo "service ssh restart" >> /start.sh
 
 # install boost	#apt-get install -y libboost-all-dev
 RUN	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz && \
@@ -35,6 +26,15 @@ RUN	cd /tmp && \
 	./config && \
 	make && make install && \
 	ldconfig
+
+# install Golang
+RUN	mkdir -p /goroot && \
+	curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
+
+# install redis
+RUN apt-get install -y redis && \
+	sed -i 's/^bind 127.0.0.1 ::1/bind 127.0.0.1/' /etc/redis/redis.conf && \
+	echo "service redis-server start" >> /start.sh
 	
 # instal rtl-sdr
 RUN	apt-get install -y libusb-1.0-0-dev && \
@@ -47,43 +47,48 @@ RUN	apt-get install -y libusb-1.0-0-dev && \
 	make install && \
 	ldconfig
 
+# install python
+RUN	apt-get install -y \
+	python3 python3-pip && \
+	python3 -m pip install --user numpy pandas && \
+	python3 -m pip install --user websockets && \
+	pip3 install redis
+
 # install nodejs and tsc
 RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
 	apt-get install -y nodejs && \
 	npm install -g typescript && \
 	npm install -g --save-dev @types/jquery
 
-# install Golang
-RUN	mkdir -p /goroot && \
-	curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
+# install net tools
+RUN	apt-get install -y \
+	arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping iproute2
+# unable to locate ncat dhclient route websocat wireshark
 
-# misc addons
-RUN	pip3 install redis
-
-# config files
-ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.bashrc /root/.
-ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.vimrc /root/.
-ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.gitconfig /root/.
-#ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.tmux.conf /root/.
-COPY ubuntu_dev/ubuntu_dev.df	/root/.
-COPY ubuntu_dev/ubuntu_dev.bat	/root/.
-COPY ubuntu_dev.yml	/root/.
+# tools/libraries
+RUN	apt-get install -y \
+	vim tree tmux multitail \
+	libicu-dev libzmq3-dev libaio1 rlwrap
+# apt-get install -y libbz2-dev
+# apt-utils libusb-dev
 
 # clean up
 RUN apt-get update -y && apt-get upgrade -y && \
 	apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Environment
-RUN echo "export GOROOT=/goroot" >> /etc/environment
-RUN echo "export PATH=$PATH:/d/Tools:$GOROOT/bin:/d/Tools/Oracle/instantclient_19_5" >> /etc/environment
-
-# SSH server setup
-RUN	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-	echo 'root:toor' | chpasswd && \
-	echo "service ssh restart" >> /start.sh && \
-	echo "/bin/bash" >> /start.sh && \
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.bashrc /root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.vimrc /root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.gitconfig /root/.
+#ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.tmux.conf /root/.
+COPY ubuntu_dev/ubuntu_dev.df	/root/.
+COPY ubuntu_dev/ubuntu_dev.yml	/root/.
+RUN echo "export ACCS_HOME=/d/Projects/ACCS" >> /etc/environment && \
+	echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ACCS_HOME/sensor:$ACCS_HOME/server" >> /etc/environment && \
+	echo "export GOROOT=/goroot" >> /etc/environment && \
+	echo "export PATH=$PATH:/d/Tools:/goroot/bin:/d/Tools/Oracle/instantclient_19_5" >> /etc/environment
+RUN	echo "/bin/bash" >> /start.sh && \
 	chmod +x /start.sh
-COPY id_rsa.pub /root/.ssh/authorized_keys
 
 EXPOSE 22
 WORKDIR /root
@@ -97,5 +102,11 @@ ENTRYPOINT /start.sh
 # docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001 -p 9001:9001 --expose 9002 -p 9002:9002 --expose 9003 -p 9003:9003 --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev:20190826
 # ssh root@192.168.99.102 -p 2222
 # apt install ntp
+# mkdir -p /usr/lib/jvm/jdk-13.0.2/
+# tar -xvf jdk-13.0.2_linux-x64_bin.tar.gz
+# mv jdk-13.0.2/* /usr/lib/jvm/jdk-13.0.2/
+# update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/jdk-13.0.2/bin/java" 1010
+# update-alternatives --install "/usr/bin/javac" "javac" "/usr/lib/jvm/jdk-13.0.2/bin/javac" 1010
+# apt install maven
 # docker ps -a
 # docker commit <df888c72ed5a> ubuntu_dev

@@ -1,49 +1,56 @@
 # docker-compose.exe -f .\ubuntu_dev.yml up -d
-#docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001-9003 --expose 9090 -p 9001:9001 -p 9002:9002 -p 9003:9003 -p 9090:9090 --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined shchohan/ubuntu_dev:20190924
+#docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001-9003 --expose 9090 -p 9001:9001 -p 9002:9002 -p 9003:9003 -p 9090:9090  --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev
 
 version: "3.3"
 services:
+
+### Ubuntu_dev
   ubuntu_dev:
-#    image: shchohan/ubuntu_dev:20191224
+#    image: shchohan/ubuntu_dev:20200102
     image: ubuntu_dev
     container_name: ubuntu_dev
     volumes:
       - /C_DRIVE:/c
-      - /D_DRIVE:/d
+      - /d:/d
       - /E_DRIVE:/e
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
     ports:
       - "2222:22"
       - "9090:9090"
-    # devices:
-      # - /dev/bus/usb:/dev/bus/usb
+      - "6379:6379"
+      # - "5010:5010"
+      # - "9000:9000"
+      # - "9002:9002"
+      # - "9007:9007"
     environment:
         - privileged 
         - cap-add=sys_ptrace
         - security-opt seccomp=unconfined
-#        - GOROOT=/goroot
-#        - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/d/Tools:/goroot
     tty: true
 
 ### Oracle https://github.com/fuzziebrain/docker-oracle-xe
   # docker exec -it oracle-xe bash -c "source /home/oracle/.bashrc; bash"
   # /opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE
   # docker exec -it oracle-xe bash -c "/opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE"
-  oracle:
-    image: oracle-xe:18c
-    container_name: oracle-xe
-    volumes:
-      - /D_DRIVE/Projects/ACCS/db/oradata-xe:/opt/oracle/oradata
-      - /D_DRIVE:/d
-      - /E_DRIVE:/e
-    ports:
-      - 11521:1521
-      - 15500:5500
+  # oracle:
+    # image: oracle-xe:18c
+    # container_name: oracle-xe
+    # volumes:
+      # - /D_DRIVE/Tools/db/oradata-xe:/opt/oracle/oradata
+      # - /D_DRIVE:/d
+      # - /E_DRIVE:/e
+    # ports:
+      # - 11521:1521
+      # - 15500:5500
       
-### Redis    
-  redis:
-    image: redis
-    ports:
-      - "6379:6379"
+### Redis   
+  # docker exec -it redis -c "source /home/oracle/.bashrc; bash"
+  # redis:
+    # image: redis
+    # container_name: redis
+    # ports:
+      # - "6379:6379"
 
     # deploy:
         # restart_policy:
@@ -54,7 +61,8 @@ services:
     # dns:
         # - 8.8.8.8
         # - 9.9.9.9
+
 #    entrypoint:
 #    healthcheck:
-networks:
-  - accs_net
+#networks:
+#  - ubuntu_dev_net

@@ -1,0 +1,67 @@
+FROM ubuntu:18.04
+MAINTAINER Salah Chohan
+LABEL version="1.0" Location="Canada/Toronto" type="ACCS"
+
+RUN apt-get update -y && \
+	apt-get install -y \
+	apt-utils openssh* sshpass vim tree tmux multitail \
+	build-essential cmake pkg-config ca-certificates
+
+# install net tools
+RUN	apt-get install -y \
+	git wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping iproute2
+# unable to locate ncat dhclient route websocat wireshark
+
+# SSH server setup
+COPY id_rsa.pub /root/.ssh/authorized_keys
+RUN	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+	echo 'root:toor' | chpasswd && \
+	echo "service ssh restart" >> /start.sh && \
+	chmod +x /start.sh
+
+# install redis
+RUN apt-get install -y redis && \
+	sed -i 's/^bind 127.0.0.1 ::1/bind 127.0.0.1/' /etc/redis/redis.conf && \
+	echo "service redis-server start" >> /start.sh
+#	echo "/bin/bash -c 'nohup redis-server &'" >> /start.sh && \
+
+# install python
+RUN	apt-get install -y python3 python3-pip && \
+	pip3 install redis
+
+# install nodejs and tsc
+RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
+	apt-get install -y nodejs && \
+	npm install -g typescript && \
+	npm install -g --save-dev @types/jquery
+
+# clean up
+RUN apt-get update -y && apt-get upgrade -y && \
+	apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Environment
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.bashrc /root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.vimrc /root/.
+#ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.tmux.conf /root/.
+COPY accs.df	/root/.
+COPY accs.yml	/root/.
+RUN echo "export ACCS_HOME=/ACCS" >> /etc/environment
+#RUN echo "export GOROOT=/goroot" >> /etc/environment
+#RUN echo "export PATH=$PATH:/d/Tools:/goroot/bin:/d/Tools/Oracle/instantclient_19_5" >> /etc/environment
+RUN echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ACCS_HOME/sensor" >> /etc/environment
+RUN mkdir -p /ACCS/{log, feeder, sensor, web}
+RUN	echo "/bin/bash" >> /start.sh
+
+EXPOSE 22
+#ENTRYPOINT /start.sh
+CMD /start.sh
+
+########################################################
+# docker build -f accs.df -t accs .
+# docker-compose -f .\accs.yml up -d
+# ssh -p 2251 root@192.168.99.107
+# docker exec -it ACCS bash -c "source /root/.bashrc; bash"
+# apt install ntp
+# docker ps -a
+# docker commit aa80343eb463 accs
+

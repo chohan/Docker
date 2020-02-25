@@ -1,0 +1,58 @@
+FROM ubuntu:18.04
+MAINTAINER Salah Chohan
+LABEL version="1.0" Location="Canada/Toronto" type="Feeder"
+
+RUN apt-get update -y && \
+	apt-get install -y \
+	apt-utils openssh* sshpass vim tree tmux multitail \
+	build-essential cmake pkg-config ca-certificates
+
+# install net tools
+RUN	apt-get install -y \
+	git wget curl arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping iproute2
+# unable to locate ncat dhclient route websocat wireshark
+
+# config files
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.bashrc /root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.vimrc /root/.
+#ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.tmux.conf /root/.
+COPY feeder.df	/root/.
+
+# SSH server setup
+COPY id_rsa.pub /root/.ssh/authorized_keys
+RUN	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+	echo 'root:toor' | chpasswd && \
+	echo "service ssh restart" >> /start.sh && \
+	chmod +x /start.sh
+
+#################################################################
+
+# install python
+RUN	apt-get install -y python3 python3-pip && \
+	pip3 install redis
+
+# clean up
+RUN apt-get update -y && apt-get upgrade -y && \
+	apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Environment
+#RUN echo "export GOROOT=/goroot" >> /etc/environment
+#RUN echo "export PATH=$PATH:/d/Tools:/goroot/bin:/d/Tools/Oracle/instantclient_19_5" >> /etc/environment
+RUN mkdir -p /ACCS/{log, feeder, web}
+RUN echo "/bin/bash -c 'cd /ACCS/feeder && python3 FeederZhaw.py &'" >> /start.sh && \
+	echo "/bin/bash" >> /start.sh
+
+EXPOSE 22
+WORKDIR /root
+USER root
+ENTRYPOINT /start.sh
+
+########################################################
+# docker build -f feeder.df -t feeder_zurich_radar .
+# docker-compose -f .\feeder.yml up -d
+# ssh -p 2253 root@192.168.99.106
+# docker exec -it Feeder_Zurich_Radar bash -c "source /root/.bashrc; bash"
+# apt install ntp
+# docker ps -a
+# docker commit aa80343eb463 feeder_zurich_radar
+

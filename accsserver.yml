@@ -1,0 +1,20 @@
+
+version: "3.3"
+services:
+
+
+### ACCS Server (web server)
+  # docker-compose -f .\accsserver.yml up -d
+  # docker exec -it ACCSServer bash -c "source /root/.bashrc; bash"
+  # ssh -p 2254 root@192.168.99.106
+  ACCSServer:
+    image: accsserver
+    container_name: ACCSServer
+    volumes:
+      - /D_DRIVE:/d
+    ports:
+      - "2254:22"
+      - "9091:9090"
+    tty: true
+    #entrypoint: entrypoint: "/bin/bash -c 'cd /ACCS/web && node ACCSServer.js'"
+    #entrypoint: /start.sh  does not work

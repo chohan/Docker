@@ -1,0 +1,19 @@
+
+version: "3.3"
+services:
+
+
+### Feeder for Zurich radar
+  # docker-compose -f .\feeder.yml up -d
+  # docker exec -it Feeder_Zurich_Radar bash -c "source /root/.bashrc; bash"
+  # ssh -p 2253 root@192.168.99.106
+  Feeder_Zurich_Radar:
+    image: feeder_zurich_radar
+    container_name: Feeder_Zurich_Radar
+    volumes:
+      - /D_DRIVE:/d
+    ports:
+      - "2253:22"
+    tty: true
+    #entrypoint: "/bin/bash -c 'cd /ACCS/feeder && python3 FeederZhaw.py'"
+    #entrypoint: /start.sh  does not work
