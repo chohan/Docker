@@ -6,12 +6,24 @@ services:
 
 ### Ubuntu_dev
   ubuntu_dev:
-#    image: shchohan/ubuntu_dev:20200102
-    image: ubuntu_dev
+    image: shchohan/ubuntu_dev:20200220
+#    image: ubuntu_dev
     container_name: ubuntu_dev
+    working_dir: /ACCS
+    domainname: Salah.Chohan
+    hostname: ubuntu_dev
+    ipc: host
+    #mac_address: 02:42:ac:11:65:43
+    user: root
+    privileged: true
+    #read_only: true
+    #shm_size: 64M
+    #stdin_open: true
+    command: echo "Bismillah"
+    
     volumes:
       - /C_DRIVE:/c
-      - /d:/d
+      - /D_DRIVE:/d
       - /E_DRIVE:/e
     devices:
       - /dev/bus/usb:/dev/bus/usb
@@ -24,7 +36,7 @@ services:
       # - "9002:9002"
       # - "9007:9007"
     environment:
-        - privileged 
+        #- privileged 
         - cap-add=sys_ptrace
         - security-opt seccomp=unconfined
     tty: true

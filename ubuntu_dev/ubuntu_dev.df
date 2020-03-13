@@ -67,7 +67,7 @@ RUN	apt-get install -y \
 
 # tools/libraries
 RUN	apt-get install -y \
-	vim tree tmux multitail \
+	vim tree tmux multitail tzdata \
 	libicu-dev libzmq3-dev libaio1 rlwrap
 # apt-get install -y libbz2-dev
 # apt-utils libusb-dev

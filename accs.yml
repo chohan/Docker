@@ -8,11 +8,16 @@ services:
 
 ### ACCS
   accs:
+#    image: accs
 #    image: shchohan/accs:20200220
-    image: accs
+    image: gcr.io/velvety-setup-266020/accs:20200220
     container_name: accs
+    domainname: Salah.Chohan
+    hostname: accs
+    privileged: true
     volumes:
       - /d/Projects/ACCS/bin/20200220:/ACCS
+      #- /ACCS:/ACCS
       # - /D_DRIVE:/d
     ports:
       - "2251:22"
@@ -23,10 +28,11 @@ services:
     devices:
       - /dev/bus/usb:/dev/bus/usb
     environment:
-        - privileged 
+        #- privileged 
         - cap-add=sys_ptrace
         - security-opt seccomp=unconfined
-        - TZ=America/Toronto
+        #- TZ=America/Toronto
+        TZ: "America/Denver"
     tty: true
     #entrypoint: "/bin/bash -c '/start.sh && $ACCS_HOME/start_accs.sh'"
     #entrypoint: ["/start.sh"]
