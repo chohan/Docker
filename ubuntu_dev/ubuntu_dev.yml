@@ -1,4 +1,4 @@
-# docker-compose.exe -f .\ubuntu_dev.yml up -d
+# docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d ubuntu_dev
 #docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001-9003 --expose 9090 -p 9001:9001 -p 9002:9002 -p 9003:9003 -p 9090:9090  --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev
 
 version: "3.3"
@@ -20,6 +20,7 @@ services:
     #shm_size: 64M
     #stdin_open: true
     command: echo "Bismillah"
+    #TZ: "America/Denver"   // even docker is not starting
     
     volumes:
       - /C_DRIVE:/c
@@ -36,26 +37,33 @@ services:
       # - "9002:9002"
       # - "9007:9007"
     environment:
+        #TZ: "America/Denver"       // docker does not even start
+        #- TZ=Asia/Shanghai          // no effect
         #- privileged 
         - cap-add=sys_ptrace
         - security-opt seccomp=unconfined
     tty: true
 
-### Oracle https://github.com/fuzziebrain/docker-oracle-xe
+## Oracle https://github.com/fuzziebrain/docker-oracle-xe
   # docker exec -it oracle-xe bash -c "source /home/oracle/.bashrc; bash"
   # /opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE
   # docker exec -it oracle-xe bash -c "/opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE"
-  # oracle:
-    # image: oracle-xe:18c
-    # container_name: oracle-xe
-    # volumes:
-      # - /D_DRIVE/Tools/db/oradata-xe:/opt/oracle/oradata
-      # - /D_DRIVE:/d
-      # - /E_DRIVE:/e
-    # ports:
-      # - 11521:1521
-      # - 15500:5500
-      
+  # docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d oracle
+  oracle:
+    #image: shchohan/oracle-xe_20200202:18c
+    image: oracle-xe:18c
+    container_name: oracle-xe
+    domainname: Salah.Chohan
+    hostname: oracle
+    #command: mount -t vboxsf -o uid=54321,gid=54321 /d/Tools/db/oradata-xe /opt/oracle/oradata
+    volumes:
+      - /D_DRIVE/Tools/db/oradata-xe:/opt/oracle/oradata
+      - /D_DRIVE:/d
+      #- /E_DRIVE:/e
+    ports:
+      - 11521:1521
+      - 15500:5500
+
 ### Redis   
   # docker exec -it redis -c "source /home/oracle/.bashrc; bash"
   # redis:

@@ -24,7 +24,7 @@ COPY ./${ORACLE_XE_RPM} /tmp/
 
 RUN yum install -y oracle-database-preinstall-18c && \
   yum install -y /tmp/${ORACLE_XE_RPM} && \
-  yum install -y vim && \
+  yum install -y less vim tzdata && \
   rm -rf /tmp/${ORACLE_XE_RPM}
 
 COPY ./oracle-xe-18c/scripts/*.sh ${ORACLE_BASE}/scripts/
@@ -38,6 +38,14 @@ COPY oracle-xe-18c/Dockerfile	/root/.
 RUN echo "export PATH=$PATH:/d/Tools:/opt/oracle/product/18c/dbhomeXE/bin" >> /etc/environment
 
 RUN chmod a+x ${ORACLE_BASE}/scripts/*.sh 
+
+# password file
+#RUN mkdir -p /opt/oracle/oradata
+#RUN chown -R 54321:54321 /opt/oracle/oradata
+RUN mkdir -p /opt/oracle/product/18c/dbhomeXE/dbs
+COPY orapwXE /opt/oracle/product/18c/dbhomeXE/dbs/.
+RUN chown 54321:54321 /opt/oracle/product/18c/dbhomeXE/dbs/orapwXE
+
 
 # 1521: Oracle listener
 # 5500: Oracle Enterprise Manager (EM) Express listener.
