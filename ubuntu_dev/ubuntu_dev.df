@@ -67,8 +67,16 @@ RUN	apt-get install -y \
 
 # tools/libraries
 RUN	apt-get install -y \
-	vim tree tmux multitail tzdata \
+	vim tree tmux multitail \
 	libicu-dev libzmq3-dev libaio1 rlwrap
+
+# time/date
+#	ln -fs /usr/share/zoneinfo/America/Toronto/etc/localtime && \
+#	dpkg-reconfigure --frontend noninteractive tzdata
+ENV DEBIAN_FRONTEND=noninteractive
+RUN echo "export TZ=America/Toronto" >> /etc/environment && \
+	apt-get install -y tzdata
+
 # apt-get install -y libbz2-dev
 # apt-utils libusb-dev
 

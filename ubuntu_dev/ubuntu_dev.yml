@@ -6,10 +6,10 @@ services:
 
 ### Ubuntu_dev
   ubuntu_dev:
-    image: shchohan/ubuntu_dev:20200220
-#    image: ubuntu_dev
+    image: shchohan/ubuntu_dev:20200420
+    #image: ubuntu_dev
     container_name: ubuntu_dev
-    working_dir: /ACCS
+    working_dir: /d/Projects/ACCS
     domainname: Salah.Chohan
     hostname: ubuntu_dev
     ipc: host
@@ -19,8 +19,8 @@ services:
     #read_only: true
     #shm_size: 64M
     #stdin_open: true
-    command: echo "Bismillah"
-    #TZ: "America/Denver"   // even docker is not starting
+    #command: echo "Bismillah"
+    #TZ: America/Denver    # upsupported config option. even docker is not starting
     
     volumes:
       - /C_DRIVE:/c
@@ -38,11 +38,18 @@ services:
       # - "9007:9007"
     environment:
         #TZ: "America/Denver"       // docker does not even start
-        #- TZ=Asia/Shanghai          // no effect
-        #- privileged 
+        #TZ: America/Toronto    # upsupported config option. even docker is not starting
+        - TZ=Asia/Shanghai
+        #- TZ=America/Toronto
+        - privileged 
         - cap-add=sys_ptrace
-        - security-opt seccomp=unconfined
+        #- security-opt seccomp=unconfined
+        - security-opt 
+        - seccomp=unconfined
+
     tty: true
+    #entrypoint: /start.sh
+    #command: /start.sh
 
 ## Oracle https://github.com/fuzziebrain/docker-oracle-xe
   # docker exec -it oracle-xe bash -c "source /home/oracle/.bashrc; bash"
@@ -50,8 +57,8 @@ services:
   # docker exec -it oracle-xe bash -c "/opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE"
   # docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d oracle
   oracle:
-    #image: shchohan/oracle-xe_20200202:18c
-    image: oracle-xe:18c
+    image: shchohan/oracle-xe:20200420
+    #image: oracle-xe:18c
     container_name: oracle-xe
     domainname: Salah.Chohan
     hostname: oracle
@@ -63,6 +70,8 @@ services:
     ports:
       - 11521:1521
       - 15500:5500
+    environment:
+        - TZ=America/Toronto
 
 ### Redis   
   # docker exec -it redis -c "source /home/oracle/.bashrc; bash"
