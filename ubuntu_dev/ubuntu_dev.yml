@@ -1,13 +1,13 @@
-# docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d ubuntu_dev
 #docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001-9003 --expose 9090 -p 9001:9001 -p 9002:9002 -p 9003:9003 -p 9090:9090  --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev
 
 version: "3.3"
 services:
 
 ### Ubuntu_dev
+# docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d ubuntu_dev
   ubuntu_dev:
-    image: shchohan/ubuntu_dev:20200420
-    #image: ubuntu_dev
+    #image: shchohan/ubuntu_dev:20200612
+    image: ubuntu_dev
     container_name: ubuntu_dev
     working_dir: /d/Projects/ACCS
     domainname: Salah.Chohan
@@ -31,7 +31,9 @@ services:
     ports:
       - "2222:22"
       - "9090:9090"
+      - "8181:8080"
       - "6379:6379"
+      - "80:80"
       # - "5010:5010"
       # - "9000:9000"
       # - "9002:9002"
@@ -39,13 +41,16 @@ services:
     environment:
         #TZ: "America/Denver"       // docker does not even start
         #TZ: America/Toronto    # upsupported config option. even docker is not starting
-        - TZ=Asia/Shanghai
+        - TZ=Asia/Shanghai  # no effect
         #- TZ=America/Toronto
         - privileged 
         - cap-add=sys_ptrace
         #- security-opt seccomp=unconfined
         - security-opt 
         - seccomp=unconfined
+
+    networks:
+      - accs_net
 
     tty: true
     #entrypoint: /start.sh
@@ -73,7 +78,10 @@ services:
     environment:
         - TZ=America/Toronto
 
-### Redis   
+    networks:
+      - accs_net
+
+### Redis   Now redis is running as part ubuntu_dev docker.
   # docker exec -it redis -c "source /home/oracle/.bashrc; bash"
   # redis:
     # image: redis
@@ -95,3 +103,6 @@ services:
 #    healthcheck:
 #networks:
 #  - ubuntu_dev_net
+
+networks:
+  accs_net:

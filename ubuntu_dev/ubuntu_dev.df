@@ -1,43 +1,84 @@
-FROM ubuntu:18.04
+# pre-requisites. First download following in the folder where this docker file is
+#	wget https://download.oracle.com/java/17/archive/jdk-17.0.1_linux-x64_bin.tar.gz
+#	wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-basic-linux.x64-21.4.0.0.0dbru.zip
+#	wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip
+#	https://nodejs.org/en/download/
+#	update .bashrc etc to github
+
+FROM ubuntu:20.04
 MAINTAINER Salah Chohan
 LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Basic build software
-RUN apt-get update -y && \
-	apt-get install -y \
-	git wget curl build-essential cmake pkg-config ca-certificates autotools-dev g++ gdb
-	
-# SSH server setup
-COPY id_rsa.pub /root/.ssh/authorized_keys
-RUN	apt-get install -y openssh* sshpass && \
+ENV JDK_VER=17.0.1
+ENV SQLPLUS_VER=21.4.0.0.0dbru
+
+RUN	echo -e "\n\n\n### Basic Software ####\n" && \
+	apt update -y && \
+	apt install -y \
+	git wget curl apt-utils zip unzip build-essential cmake pkg-config ca-certificates autotools-dev g++ gdb
+
+RUN	echo -e "\n\n\n### SSH/OpenSSL ####\n" && \
+	apt install -y openssh* sshpass sshfs openssl && \
 	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-	echo 'root:toor' | chpasswd && \
 	echo "service ssh restart" >> /start.sh
 
-# install boost	#apt-get install -y libboost-all-dev
-RUN	wget http://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz && \
-	tar -zxvf boost_1_70_0.tar.gz && \
-	cd boost_1_70_0 && ./bootstrap.sh && ./b2 && cd - && rm -f boost_1_70_0.tar.gz
+RUN	echo -e "\n\n\n### SSH Keys ####\n"
+COPY ubuntu_dev/id_rsa.pub /root/.ssh/authorized_keys
+COPY ubuntu_dev/id_rsa.pub /root/.ssh/.
+COPY ubuntu_dev/id_rsa.ppk /root/.ssh/.
+COPY ubuntu_dev/id_rsa /root/.ssh/.
+RUN	echo 'root:toor' | chpasswd
 
-# install openssl
-RUN	cd /tmp && \
-	git clone https://github.com/openssl/openssl.git && \
-	cd openssl && \
-	./config && \
-	make && make install && \
-	ldconfig
+RUN	echo -e "\n\n\n### Boost ####\n" && \
+	apt install -y libboost-all-dev
 
-# install Golang
-RUN	mkdir -p /goroot && \
-	curl https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
+RUN	echo -e "\n\n\n### Java/Maven ####\n"
+COPY jdk-${JDK_VER}_linux-x64_bin.tar.gz /tmp
+RUN apt install -y maven && \
+	cd /tmp && tar -xvf jdk-${JDK_VER}_linux-x64_bin.tar.gz && \
+	mkdir -p /usr/lib/jvm/jdk-${JDK_VER}/ && \
+	mv /tmp/jdk-${JDK_VER}/* /usr/lib/jvm/jdk-${JDK_VER}/ && \
+	update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/jdk-${JDK_VER}/bin/java" 1010 && \
+	update-alternatives --install "/usr/bin/javac" "javac" "/usr/lib/jvm/jdk-${JDK_VER}/bin/javac" 1010 && \
+	echo "export JAVA_HOME=/usr/lib/jvm/jdk-${JDK_VER}" >> /etc/environment
+ENV PATH=$PATH:/usr/lib/jvm/jdk-${JDK_VER}/bin
 
-# install redis
-RUN apt-get install -y redis && \
-	sed -i 's/^bind 127.0.0.1 ::1/bind 127.0.0.1/' /etc/redis/redis.conf && \
+RUN	echo -e "\n\n\n### Python ####\n" && \
+	apt update -y && \
+	apt install -y python3 python3-pip && \
+	python3 -m pip install --user numpy pandas && \
+	pip3 install websockets && \
+	pip3 install redis cx_Oracle openpyxl
+
+RUN	echo -e "\n\n\n### NodeJS & tsc ####\n" && \
+	apt install -y nodejs npm && \
+	npm install -g typescript && \
+	npm install -g --save-dev @types/jquery
+
+RUN	echo -e "\n\n\n### GO Lang ####\n" && \
+	apt install -y golang
+
+RUN	echo -e "\n\n\n### SqlPlus ####\n" && \
+	apt install -y libaio1 rlwrap
+COPY instantclient-*-${SQLPLUS_VER}.zip /opt/
+WORKDIR /opt/
+RUN unzip /opt/instantclient-basic-linux.x64-${SQLPLUS_VER}.zip && \
+	unzip /opt/instantclient-sqlplus-linux.x64-${SQLPLUS_VER}.zip && \
+	cd /opt/ && ls -la && \
+	rm -v /opt/instantclient-*-${SQLPLUS_VER}.zip && \
+	mv -v /opt/instantclient* /opt/instantclient
+ENV PATH=$PATH:/opt/instantclient
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/instantclient
+
+RUN	echo -e "\n\n\n### Redis ####\n" && \
+	apt install -y redis && \
+	sed -i 's/^bind/#bind/' /etc/redis/redis.conf && \
+	sed -i 's/protected-mode yes/protected-mode no/' /etc/redis/redis.conf && \
 	echo "service redis-server start" >> /start.sh
 	
-# instal rtl-sdr
-RUN	apt-get install -y libusb-1.0-0-dev && \
+RUN	echo -e "\n\n\n### RTL-SDR ####\n" && \
+	apt install -y libusb-1.0-0-dev && \
 	cd /tmp && \
 	git clone git://git.osmocom.org/rtl-sdr.git && \
 	mkdir rtl-sdr/build && \
@@ -47,42 +88,23 @@ RUN	apt-get install -y libusb-1.0-0-dev && \
 	make install && \
 	ldconfig
 
-# install python
-RUN	apt-get install -y \
-	python3 python3-pip && \
-	python3 -m pip install --user numpy pandas && \
-	python3 -m pip install --user websockets && \
-	pip3 install redis cx_Oracle
+RUN	echo -e "\n\n\n### Net Tools ####\n" && \
+	apt install -y \
+	arp-scan ipcalc htop nmap masscan netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping iproute2 ncat
+# unable to locate dhclient route websocat wireshark
 
-# install nodejs and tsc
-RUN	curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
-	apt-get install -y nodejs && \
-	npm install -g typescript && \
-	npm install -g --save-dev @types/jquery
+RUN	echo -e "\n\n\n### Tools/Libraries ####\n" && \
+	apt install -y vim tree tmux multitail libicu-dev ctags usbutils
 
-# install net tools
-RUN	apt-get install -y \
-	arp-scan ipcalc htop nmap netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping iproute2
-# unable to locate ncat dhclient route websocat wireshark
+RUN	echo -e "\n\n\n### Time/Date ####\n" && \
+	echo "export TZ=America/Toronto" >> /etc/environment && \
+	apt install -y tzdata
 
-# tools/libraries
-RUN	apt-get install -y \
-	vim tree tmux multitail \
-	libicu-dev libzmq3-dev libaio1 rlwrap
-
-# time/date
-#	ln -fs /usr/share/zoneinfo/America/Toronto/etc/localtime && \
-#	dpkg-reconfigure --frontend noninteractive tzdata
-ENV DEBIAN_FRONTEND=noninteractive
-RUN echo "export TZ=America/Toronto" >> /etc/environment && \
-	apt-get install -y tzdata
-
-# apt-get install -y libbz2-dev
-# apt-utils libusb-dev
-
-# clean up
-RUN apt-get update -y && apt-get upgrade -y && \
-	apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN	echo -e "\n\n\n### Clean up ####\n" && \
+	apt update -y && apt upgrade -y && \
+	apt autoclean && apt autoremove && apt clean && \
+	rm -rf /tmp/* && \
+	apt clean && rm -rf /var/lib/apt/lists/*
 
 # Environment
 ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.bashrc /root/.
@@ -91,11 +113,11 @@ ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.gitconfig /roo
 #ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.tmux.conf /root/.
 COPY ubuntu_dev/ubuntu_dev.df	/root/.
 COPY ubuntu_dev/ubuntu_dev.yml	/root/.
-RUN echo "export ACCS_HOME=/d/Projects/ACCS" >> /etc/environment && \
+ENV ACCS_HOME=/d/Projects/ACCS
+RUN echo "export ACCS_HOME=$ACCS_HOME" >> /etc/environment && \
 	echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ACCS_HOME/sensor:$ACCS_HOME/server" >> /etc/environment && \
-	echo "export GOROOT=/goroot" >> /etc/environment && \
-	echo "export PATH=$PATH:/d/Tools:/goroot/bin:/d/Tools/Oracle/instantclient_19_5" >> /etc/environment
-RUN	echo "/bin/bash" >> /start.sh && \
+	echo "export PATH=$PATH" >> /etc/environment && \
+	echo "/bin/bash" >> /start.sh && \
 	chmod +x /start.sh
 
 EXPOSE 22
@@ -109,12 +131,5 @@ ENTRYPOINT /start.sh
 # docker build -f ubuntu_dev/ubuntu_dev.df -t ubuntu_dev .
 # docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001 -p 9001:9001 --expose 9002 -p 9002:9002 --expose 9003 -p 9003:9003 --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev:20190826
 # ssh root@192.168.99.102 -p 2222
-# apt install ntp
-# mkdir -p /usr/lib/jvm/jdk-13.0.2/
-# tar -xvf jdk-13.0.2_linux-x64_bin.tar.gz
-# mv jdk-13.0.2/* /usr/lib/jvm/jdk-13.0.2/
-# update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/jdk-13.0.2/bin/java" 1010
-# update-alternatives --install "/usr/bin/javac" "javac" "/usr/lib/jvm/jdk-13.0.2/bin/javac" 1010
-# apt install maven
 # docker ps -a
 # docker commit <df888c72ed5a> ubuntu_dev
