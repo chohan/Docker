@@ -1,17 +1,12 @@
 # pre-requisites. First download following in the folder where this docker file is
 #	wget https://download.oracle.com/java/17/archive/jdk-17.0.1_linux-x64_bin.tar.gz
-#	wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-basic-linux.x64-21.4.0.0.0dbru.zip
-#	wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip
-#	https://nodejs.org/en/download/
+#	download SQLcl
 #	update .bashrc etc to github
 
 FROM ubuntu:20.04
 MAINTAINER Salah Chohan
 LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
 ENV DEBIAN_FRONTEND=noninteractive
-
-ENV JDK_VER=17.0.1
-ENV SQLPLUS_VER=21.4.0.0.0dbru
 
 RUN	echo -e "\n\n\n### Basic Software ####\n" && \
 	apt update -y && \
@@ -34,6 +29,7 @@ RUN	echo -e "\n\n\n### Boost ####\n" && \
 	apt install -y libboost-all-dev
 
 RUN	echo -e "\n\n\n### Java/Maven ####\n"
+ENV JDK_VER=17.0.1
 COPY jdk-${JDK_VER}_linux-x64_bin.tar.gz /tmp
 RUN apt install -y maven && \
 	cd /tmp && tar -xvf jdk-${JDK_VER}_linux-x64_bin.tar.gz && \
@@ -51,25 +47,21 @@ RUN	echo -e "\n\n\n### Python ####\n" && \
 	pip3 install websockets && \
 	pip3 install redis cx_Oracle openpyxl
 
+RUN	echo -e "\n\n\n### SQLcl ####\n"
+COPY sqlcl-21.4.0.348.1716.zip /opt/
+RUN cd /opt && \
+	unzip sqlcl-21.4.0.348.1716.zip && \
+	rm -v /opt/sqlcl-21.4.0.348.1716.zip
+ENV PATH=$PATH:/opt/sqlcl/bin
+
 RUN	echo -e "\n\n\n### NodeJS & tsc ####\n" && \
-	apt install -y nodejs npm && \
+	curl -sL https://deb.nodesource.com/setup_17.x | bash - && \
+	apt-get install -y nodejs && \
 	npm install -g typescript && \
 	npm install -g --save-dev @types/jquery
 
 RUN	echo -e "\n\n\n### GO Lang ####\n" && \
 	apt install -y golang
-
-RUN	echo -e "\n\n\n### SqlPlus ####\n" && \
-	apt install -y libaio1 rlwrap
-COPY instantclient-*-${SQLPLUS_VER}.zip /opt/
-WORKDIR /opt/
-RUN unzip /opt/instantclient-basic-linux.x64-${SQLPLUS_VER}.zip && \
-	unzip /opt/instantclient-sqlplus-linux.x64-${SQLPLUS_VER}.zip && \
-	cd /opt/ && ls -la && \
-	rm -v /opt/instantclient-*-${SQLPLUS_VER}.zip && \
-	mv -v /opt/instantclient* /opt/instantclient
-ENV PATH=$PATH:/opt/instantclient
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/instantclient
 
 RUN	echo -e "\n\n\n### Redis ####\n" && \
 	apt install -y redis && \
