@@ -1,9 +1,12 @@
 # pre-requisites. First download following in the folder where this docker file is
 #	wget https://download.oracle.com/java/17/archive/jdk-17.0.1_linux-x64_bin.tar.gz
+#	wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-basiclite-linux.x64-21.4.0.0.0dbru.zip
+#	wget https://nodejs.org/dist/v18.12.1/node-v18.12.1-linux-x64.tar.xz
 #	download SQLcl
 #	update .bashrc etc to github
+#	update xxx_VERSION
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 MAINTAINER Salah Chohan
 LABEL version="1.0" Location="Canada/Toronto" type="ubuntu_dev"
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,7 +17,7 @@ RUN	echo -e "\n\n\n### Basic Software ####\n" && \
 	git wget curl apt-utils zip unzip build-essential cmake pkg-config ca-certificates autotools-dev g++ gdb
 
 RUN	echo -e "\n\n\n### SSH/OpenSSL ####\n" && \
-	apt install -y openssh* sshpass sshfs openssl && \
+	apt install -y openssh* sshpass sshfs openssl stunnel && \
 	sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
 	echo "service ssh restart" >> /start.sh
 
@@ -23,45 +26,67 @@ COPY ubuntu_dev/id_rsa.pub /root/.ssh/authorized_keys
 COPY ubuntu_dev/id_rsa.pub /root/.ssh/.
 COPY ubuntu_dev/id_rsa.ppk /root/.ssh/.
 COPY ubuntu_dev/id_rsa /root/.ssh/.
-RUN	echo 'root:toor' | chpasswd
+RUN	echo 'root:toor' | chpasswd && \
+	chmod 700 /root/.ssh/*
 
-RUN	echo -e "\n\n\n### Boost ####\n" && \
-	apt install -y libboost-all-dev
+#RUN	echo -e "\n\n\n### Boost ####\n" && \
+#	apt install -y libboost-all-dev
+
+RUN	echo -e "\n\n\n### GO Lang ####\n" && \
+	apt install -y golang
 
 RUN	echo -e "\n\n\n### Java/Maven ####\n"
-ENV JDK_VER=17.0.1
-COPY jdk-${JDK_VER}_linux-x64_bin.tar.gz /tmp
+ENV JDK_VERSION=20.0.1
+COPY jdk-${JDK_VERSION}_linux-x64_bin.tar.gz /tmp
 RUN apt install -y maven && \
-	cd /tmp && tar -xvf jdk-${JDK_VER}_linux-x64_bin.tar.gz && \
-	mkdir -p /usr/lib/jvm/jdk-${JDK_VER}/ && \
-	mv /tmp/jdk-${JDK_VER}/* /usr/lib/jvm/jdk-${JDK_VER}/ && \
-	update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/jdk-${JDK_VER}/bin/java" 1010 && \
-	update-alternatives --install "/usr/bin/javac" "javac" "/usr/lib/jvm/jdk-${JDK_VER}/bin/javac" 1010 && \
-	echo "export JAVA_HOME=/usr/lib/jvm/jdk-${JDK_VER}" >> /etc/environment
-ENV PATH=$PATH:/usr/lib/jvm/jdk-${JDK_VER}/bin
+	cd /tmp && tar -xvf jdk-${JDK_VERSION}_linux-x64_bin.tar.gz && \
+	mkdir -p /usr/lib/jvm/jdk-${JDK_VERSION}/ && \
+	mv /tmp/jdk-${JDK_VERSION}/* /usr/lib/jvm/jdk-${JDK_VERSION}/ && \
+	update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/jdk-${JDK_VERSION}/bin/java" 1010 && \
+	update-alternatives --install "/usr/bin/javac" "javac" "/usr/lib/jvm/jdk-${JDK_VERSION}/bin/javac" 1010 && \
+	echo "export JAVA_HOME=/usr/lib/jvm/jdk-${JDK_VERSION}" >> /etc/environment
+ENV PATH=$PATH:/usr/lib/jvm/jdk-${JDK_VERSION}/bin
+RUN apt autoclean && apt autoremove && apt clean
 
-RUN	echo -e "\n\n\n### Python ####\n" && \
+RUN	echo -e "\n\n\n### Python ####\n" && \	
 	apt update -y && \
 	apt install -y python3 python3-pip && \
 	python3 -m pip install --user numpy pandas && \
 	pip3 install websockets && \
-	pip3 install redis cx_Oracle openpyxl
+	pip3 install redis cx_Oracle openpyxl geopy
 
+RUN	echo -e "\n\n\n### NodeJS & tsc ####\n"
+#RUN wget https://nodejs.org/dist/v18.12.1/node-v18.12.1-linux-x64.tar.xz; ls -la
+ENV NODEJS_VERSION=18.18.0
+COPY node-v${NODEJS_VERSION}-linux-x64.tar.xz /tmp
+RUN	cd /tmp && tar xvfJ node-v${NODEJS_VERSION}-linux-x64.tar.xz && \
+	cp -r /tmp/node-v${NODEJS_VERSION}-linux-x64/bin /usr/ && \
+	cp -r /tmp/node-v${NODEJS_VERSION}-linux-x64/lib /usr/ && \
+	cp -r /tmp/node-v${NODEJS_VERSION}-linux-x64/include /usr/ && \
+	cp -r /tmp/node-v${NODEJS_VERSION}-linux-x64/share /usr/ && \
+	npm install -g typescript && \
+	npm install -g --save-dev @types/jquery && \
+	npm install -g --save sqlite3
+	
 RUN	echo -e "\n\n\n### SQLcl ####\n"
-COPY sqlcl-21.4.0.348.1716.zip /opt/
+ENV SQLCI_VERSION=23.2.0.178.1027
+COPY sqlcl-${SQLCI_VERSION}.zip /opt/
 RUN cd /opt && \
-	unzip sqlcl-21.4.0.348.1716.zip && \
-	rm -v /opt/sqlcl-21.4.0.348.1716.zip
+	unzip sqlcl-${SQLCI_VERSION}.zip && \
+	rm -v /opt/sqlcl-${SQLCI_VERSION}.zip &&\
+	echo "export SQLPATH=~" >> /etc/environment
 ENV PATH=$PATH:/opt/sqlcl/bin
 
-RUN	echo -e "\n\n\n### NodeJS & tsc ####\n" && \
-	curl -sL https://deb.nodesource.com/setup_17.x | bash - && \
-	apt-get install -y nodejs && \
-	npm install -g typescript && \
-	npm install -g --save-dev @types/jquery
-
-RUN	echo -e "\n\n\n### GO Lang ####\n" && \
-	apt install -y golang
+#RUN	echo -e "\n\n\n### Oracle instantclient ####\n"
+#ENV INSTANTCLIENT_VERSION=21.10.0.0.0
+#COPY instantclient-basiclite-linux.x64-${INSTANTCLIENT_VERSION}dbru.zip /opt/
+#RUN cd /opt && \
+#	unzip /opt/instantclient-basiclite-linux.x64-${INSTANTCLIENT_VERSION}dbru.zip && \
+#	rm -v /opt/instantclient-basiclite-linux.x64-${INSTANTCLIENT_VERSION}dbru.zip && \
+#	mv -v /opt/instantclient* /opt/instantclient && \
+#	apt install -y libaio1
+#ENV PATH=$PATH:/opt/instantclient
+#ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/instantclient
 
 RUN	echo -e "\n\n\n### Redis ####\n" && \
 	apt install -y redis && \
@@ -70,6 +95,7 @@ RUN	echo -e "\n\n\n### Redis ####\n" && \
 	echo "service redis-server start" >> /start.sh
 	
 RUN	echo -e "\n\n\n### RTL-SDR ####\n" && \
+	# apt-get install librtlsdr-dev
 	apt install -y libusb-1.0-0-dev && \
 	cd /tmp && \
 	git clone git://git.osmocom.org/rtl-sdr.git && \
@@ -79,18 +105,26 @@ RUN	echo -e "\n\n\n### RTL-SDR ####\n" && \
 	make && \
 	make install && \
 	ldconfig
+	
+RUN	echo -e "\n\n\n### OpenSky ####\n" && \
+	cd /tmp && \
+	git clone https://github.com/openskynetwork/opensky-api && \
+	cd opensky-api/python && \
+	python3 setup.py install
 
 RUN	echo -e "\n\n\n### Net Tools ####\n" && \
+	apt update -y && \
 	apt install -y \
 	arp-scan ipcalc htop nmap masscan netcat net-tools iftop iptables ngrep socat tcpdump telnet traceroute iputils-ping iproute2 ncat
-# unable to locate dhclient route websocat wireshark
+# unable to locate dhclient route websocat wireshark(458 MB)
 
 RUN	echo -e "\n\n\n### Tools/Libraries ####\n" && \
-	apt install -y vim tree tmux multitail libicu-dev ctags usbutils
+	apt update -y && \
+	apt install -y vim rsync tree tmux libicu-dev usbutils tzdata sqlite3 libsqlite3-dev
 
-RUN	echo -e "\n\n\n### Time/Date ####\n" && \
-	echo "export TZ=America/Toronto" >> /etc/environment && \
-	apt install -y tzdata
+RUN	echo -e "\n\n\n### RUST ####\n" && curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+# echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 RUN	echo -e "\n\n\n### Clean up ####\n" && \
 	apt update -y && apt upgrade -y && \
@@ -102,6 +136,7 @@ RUN	echo -e "\n\n\n### Clean up ####\n" && \
 ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.bashrc /root/.
 ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.vimrc /root/.
 ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.gitconfig /root/.
+ADD https://raw.githubusercontent.com/chohan/Linux-script/master/login.sql /root/.
 #ADD https://raw.githubusercontent.com/chohan/Linux-script/master/.tmux.conf /root/.
 COPY ubuntu_dev/ubuntu_dev.df	/root/.
 COPY ubuntu_dev/ubuntu_dev.yml	/root/.

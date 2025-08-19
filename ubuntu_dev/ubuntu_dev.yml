@@ -1,15 +1,15 @@
 #docker run --rm -d -t -v /C_DRIVE:/c -v /D_DRIVE:/d -v /E_DRIVE:/e -p 2222:22 --expose 9001-9003 --expose 9090 -p 9001:9001 -p 9002:9002 -p 9003:9003 -p 9090:9090  --privileged -v /dev/bus/usb:/dev/bus/usb --cap-add=SYS_PTRACE --security-opt seccomp=unconfined ubuntu_dev
 
-version: "3.3"
 services:
 
 ### Ubuntu_dev
-# docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d ubuntu_dev
+# docker-compose -f /mnt/h/Projects/Docker/ubuntu_dev/ubuntu_dev.yml up -d ubuntu_dev
+# docker-compose -f D:\Projects\Docker\ubuntu_dev\ubuntu_dev.yml up -d ubuntu_dev
   ubuntu_dev:
-    #image: shchohan/ubuntu_dev:20200612
-    image: ubuntu_dev
+    image: shchohan/ubuntu_dev:20230911
+    #image: ubuntu_dev
     container_name: ubuntu_dev
-    working_dir: /d/Projects/ACCS
+    working_dir: /h/Projects/ACCS
     domainname: Salah.Chohan
     hostname: ubuntu_dev
     ipc: host
@@ -23,9 +23,14 @@ services:
     #TZ: America/Denver    # upsupported config option. even docker is not starting
     
     volumes:
-      - /C_DRIVE:/c
-      - /D_DRIVE:/d
-      - /E_DRIVE:/e
+      - /mnt/c:/c
+      - /mnt/h:/h
+      - /mnt/t:/t
+        #- /C:/c
+        #- /H:/h
+        #- /T:/t
+      #- /mnt/usb:/f
+      #- /E_DRIVE:/e
     devices:
       - /dev/bus/usb:/dev/bus/usb
     ports:
@@ -34,6 +39,7 @@ services:
       - "8181:8080"
       - "6379:6379"
       - "80:80"
+      - "1940-1950:1940-1950"
       # - "5010:5010"
       # - "9000:9000"
       # - "9002:9002"
@@ -41,7 +47,8 @@ services:
     environment:
         #TZ: "America/Denver"       // docker does not even start
         #TZ: America/Toronto    # upsupported config option. even docker is not starting
-        - TZ=Asia/Shanghai  # no effect
+        #- TZ=Asia/Shanghai
+        - TZ=America/Bogota
         #- TZ=America/Toronto
         - privileged 
         - cap-add=sys_ptrace
@@ -61,48 +68,54 @@ services:
   # /opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE
   # docker exec -it oracle-xe bash -c "/opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE"
   # docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d oracle
+#  oracle:
+#    image: shchohan/oracle-xe:20200420
+#    #image: oracle-xe:18c
+#    container_name: oracle-xe
+#    domainname: Salah.Chohan
+#    hostname: oracle
+#    #command: mount -t vboxsf -o uid=54321,gid=54321 /d/Tools/db/oradata-xe /opt/oracle/oradata
+#    volumes:
+#      - /d/Tools/db/oradata-xe:/opt/oracle/oradata
+#      - /d:/d
+#      #- /E_DRIVE:/e
+#    ports:
+#      - 11521:1521
+#      - 15500:5500
+#    environment:
+#        - TZ=America/Toronto
+#    networks:
+#      - accs_net
+
+## https://hub.docker.com/r/gvenzl/oracle-xe
+# docker run -d -t -p 1521:1521 -e ORACLE_PASSWORD=Oracle213 -v oradata:/opt/oracle/oradata gvenzl/oracle-xe:21.3.0-slim
   oracle:
-    image: shchohan/oracle-xe:20200420
-    #image: oracle-xe:18c
+    image: gvenzl/oracle-xe:21.3.0-slim
     container_name: oracle-xe
     domainname: Salah.Chohan
-    hostname: oracle
-    #command: mount -t vboxsf -o uid=54321,gid=54321 /d/Tools/db/oradata-xe /opt/oracle/oradata
+#    hostname: oracle_21.3
     volumes:
-      - /D_DRIVE/Tools/db/oradata-xe:/opt/oracle/oradata
-      - /D_DRIVE:/d
+      - oradata:/opt/oracle/oradata
+      - /d:/d
       #- /E_DRIVE:/e
+    environment:
+      - ORACLE_PASSWORD=Oracle213
     ports:
       - 11521:1521
-      - 15500:5500
-    environment:
-        - TZ=America/Toronto
-
+#    options: >-
+#      --health-cmd healthcheck.sh
+#      --health-interval 10s
+#      --health-timeout 5s
+#      --health-retries 10
     networks:
       - accs_net
 
-### Redis   Now redis is running as part ubuntu_dev docker.
-  # docker exec -it redis -c "source /home/oracle/.bashrc; bash"
-  # redis:
-    # image: redis
-    # container_name: redis
-    # ports:
-      # - "6379:6379"
-
-    # deploy:
-        # restart_policy:
-            # condition: on-failure
-            # delay: 5s
-            # max_attempts: 3
-            # window: 120s
-    # dns:
-        # - 8.8.8.8
-        # - 9.9.9.9
-
-#    entrypoint:
-#    healthcheck:
-#networks:
-#  - ubuntu_dev_net
+# docker volume create --driver local --opt type=none --opt device=/d/Tools/db/oradata-21.3 --opt o=bind oradata
+# docker volume inspect oradata
+# docker volume rm oradata
+volumes:
+  oradata:
 
 networks:
   accs_net:
+# docker network inspect ubuntu_dev_accs_net
