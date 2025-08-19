@@ -8,34 +8,69 @@ services:
 
 ### ACCS
   accs:
-#    image: accs
-#    image: shchohan/accs:20200220
-    image: gcr.io/velvety-setup-266020/accs:20200220
+    image: shchohan/accs:20230615
+    #image: shchohan/accs:20200220
+    #image: gcr.io/velvety-setup-266020/accs:20200220
     container_name: accs
     domainname: Salah.Chohan
     hostname: accs
     privileged: true
+
     volumes:
-      - /d/Projects/ACCS/bin/20200220:/ACCS
-      #- /ACCS:/ACCS
-      # - /D_DRIVE:/d
+      #- /D_DRIVE/Projects/ACCS/bin/20200220:/ACCS
+      #- /D_DRIVE:/d
+      - /mnt/d/Projects/ACCS/bin/20230615:/ACCS
+      #- /mnt/d/Projects/ACCS/bin/20200220:/ACCS
+      - /mnt/d:/d
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
     ports:
       - "2251:22"
       - "8080:9090"
       - "7963:6379"
-    networks:
-      - accs_net
-    devices:
-      - /dev/bus/usb:/dev/bus/usb
     environment:
-        #- privileged 
+        #TZ: "America/Denver"       // docker does not even start
+        #TZ: America/Toronto    # upsupported config option. even docker is not starting
+        - TZ=Asia/Shanghai  # no effect
+        - privileged 
         - cap-add=sys_ptrace
-        - security-opt seccomp=unconfined
-        #- TZ=America/Toronto
-        TZ: "America/Denver"
+        - security-opt
+        - seccomp=unconfined
+
     tty: true
     #entrypoint: "/bin/bash -c '/start.sh && $ACCS_HOME/start_accs.sh'"
     #entrypoint: ["/start.sh"]
+
+    networks:
+      - accs_net
+
+
+
+## Oracle https://github.com/fuzziebrain/docker-oracle-xe
+  # docker exec -it oracle-xe bash -c "source /home/oracle/.bashrc; bash"
+  # /opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE
+  # docker exec -it oracle-xe bash -c "/opt/oracle/product/18c/dbhomeXE/bin/sqlplus system/Oracle18@localhost/XE"
+  # docker-compose.exe -f .\ubuntu_dev\ubuntu_dev.yml up -d oracle
+  oracle:
+    image: shchohan/oracle-xe:20200420
+    #image: oracle-xe:18c
+    container_name: oracle-xe
+    domainname: Salah.Chohan
+    hostname: oracle
+    #command: mount -t vboxsf -o uid=54321,gid=54321 /d/Tools/db/oradata-xe /opt/oracle/oradata
+    volumes:
+      #- /D_DRIVE/Tools/db/oradata-xe:/opt/oracle/oradata
+      - /mnt/d/Tools/db/oradata-xe:/opt/oracle/oradata
+   ports:
+      - 11521:1521
+      - 15500:5500
+    environment:
+        - TZ=America/Toronto
+
+    networks:
+      - accs_net
+
+
 
 networks:
   accs_net:
